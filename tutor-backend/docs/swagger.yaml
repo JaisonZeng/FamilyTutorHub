@@ -1,0 +1,723 @@
+basePath: /api
+definitions:
+  handlers.DashboardSchedule:
+    properties:
+      id:
+        type: integer
+      status:
+        description: pending, ongoing, completed
+        type: string
+      student_name:
+        type: string
+      subject:
+        type: string
+      time_slot:
+        type: string
+    type: object
+  handlers.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  handlers.LoginResponse:
+    properties:
+      currentUser:
+        $ref: '#/definitions/models.User'
+      token:
+        type: string
+    type: object
+  models.Course:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ExamResult:
+    properties:
+      comment:
+        type: string
+      course:
+        $ref: '#/definitions/models.Course'
+      course_id:
+        type: integer
+      created_at:
+        type: string
+      exam_date:
+        type: string
+      exam_name:
+        description: 考试名称，如"第一次月考"
+        type: string
+      exam_type:
+        description: midterm期中, final期末, quiz小测
+        type: string
+      full_score:
+        description: 满分
+        type: number
+      id:
+        type: integer
+      score:
+        type: number
+      student:
+        $ref: '#/definitions/models.Student'
+      student_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.Schedule:
+    properties:
+      course:
+        $ref: '#/definitions/models.Course'
+      course_id:
+        type: integer
+      created_at:
+        type: string
+      end_time:
+        type: string
+      id:
+        type: integer
+      start_time:
+        type: string
+      status:
+        description: '"scheduled", "completed", "cancelled"'
+        type: string
+      student:
+        $ref: '#/definitions/models.Student'
+      student_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.Student:
+    properties:
+      created_at:
+        type: string
+      grade:
+        description: e.g., "初二"
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      notes:
+        description: 备注
+        type: string
+      parent_phone:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.User:
+    properties:
+      avatar:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: 家教管理后台系统接口文档
+  title: 家教管理系统 API
+  version: "1.0"
+paths:
+  /courses:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Course'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: 获取所有课程
+      tags:
+      - 课程管理
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 课程信息
+        in: body
+        name: course
+        required: true
+        schema:
+          $ref: '#/definitions/models.Course'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Course'
+      security:
+      - BearerAuth: []
+      summary: 创建课程
+      tags:
+      - 课程管理
+  /courses/{id}:
+    delete:
+      parameters:
+      - description: 课程ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除课程
+      tags:
+      - 课程管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 课程ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 课程信息
+        in: body
+        name: course
+        required: true
+        schema:
+          $ref: '#/definitions/models.Course'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Course'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新课程
+      tags:
+      - 课程管理
+  /currentUser:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/models.User'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - 认证
+  /dashboard/date:
+    get:
+      parameters:
+      - description: 日期 (yyyy-MM-dd)
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.DashboardSchedule'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 按日期获取课程（App专用）
+      tags:
+      - App接口
+  /dashboard/today:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.DashboardSchedule'
+            type: array
+      summary: 获取今日课程（App专用）
+      tags:
+      - App接口
+  /exam-results:
+    get:
+      parameters:
+      - description: 学生ID
+        in: query
+        name: student_id
+        type: integer
+      - description: 课程ID
+        in: query
+        name: course_id
+        type: integer
+      - description: 考试类型
+        in: query
+        name: exam_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ExamResult'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: 获取所有成绩
+      tags:
+      - 成绩管理
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 成绩信息
+        in: body
+        name: result
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExamResult'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ExamResult'
+      security:
+      - BearerAuth: []
+      summary: 创建成绩记录
+      tags:
+      - 成绩管理
+  /exam-results/{id}:
+    delete:
+      parameters:
+      - description: 成绩ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除成绩记录
+      tags:
+      - 成绩管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 成绩ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 成绩信息
+        in: body
+        name: result
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExamResult'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ExamResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新成绩记录
+      tags:
+      - 成绩管理
+  /exam-results/student/{student_id}:
+    get:
+      parameters:
+      - description: 学生ID
+        in: path
+        name: student_id
+        required: true
+        type: integer
+      - description: 课程ID
+        in: query
+        name: course_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ExamResult'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: 获取学生成绩
+      tags:
+      - 成绩管理
+  /login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 登录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户登录
+      tags:
+      - 认证
+  /logout:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户登出
+      tags:
+      - 认证
+  /schedules:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Schedule'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: 获取所有排课
+      tags:
+      - 排课管理
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 排课信息
+        in: body
+        name: schedule
+        required: true
+        schema:
+          $ref: '#/definitions/models.Schedule'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Schedule'
+      security:
+      - BearerAuth: []
+      summary: 创建排课
+      tags:
+      - 排课管理
+  /schedules/{id}:
+    delete:
+      parameters:
+      - description: 排课ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除排课
+      tags:
+      - 排课管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 排课ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 排课信息
+        in: body
+        name: schedule
+        required: true
+        schema:
+          $ref: '#/definitions/models.Schedule'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Schedule'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新排课
+      tags:
+      - 排课管理
+  /schedules/search:
+    get:
+      parameters:
+      - description: 开始日期 (yyyy-MM-dd)
+        in: query
+        name: start_date
+        type: string
+      - description: 结束日期 (yyyy-MM-dd)
+        in: query
+        name: end_date
+        type: string
+      - description: 学生ID
+        in: query
+        name: student_id
+        type: integer
+      - description: 课程ID
+        in: query
+        name: course_id
+        type: integer
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Schedule'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: 搜索排课
+      tags:
+      - 排课管理
+  /schedules/today:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.Schedule'
+              type: array
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取今日排课
+      tags:
+      - 排课管理
+  /students:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Student'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: 获取所有学生
+      tags:
+      - 学生管理
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 学生信息
+        in: body
+        name: student
+        required: true
+        schema:
+          $ref: '#/definitions/models.Student'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Student'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 创建学生
+      tags:
+      - 学生管理
+  /students/{id}:
+    delete:
+      parameters:
+      - description: 学生ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除学生
+      tags:
+      - 学生管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 学生ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 学生信息
+        in: body
+        name: student
+        required: true
+        schema:
+          $ref: '#/definitions/models.Student'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Student'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新学生信息
+      tags:
+      - 学生管理
+securityDefinitions:
+  BearerAuth:
+    description: 输入 Bearer {token}
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

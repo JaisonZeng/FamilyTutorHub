@@ -1,0 +1,36 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: tutor
+      MYSQL_USER: tutor
+      MYSQL_PASSWORD: tutor123
+    volumes:
+      - mysqldata:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+
+  backend:
+    build: ./tutor-backend
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: tutor
+      DB_PASSWORD: tutor123
+      DB_NAME: tutor
+    depends_on:
+      - db
+
+  frontend:
+    build: ./tutor-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysqldata:
