@@ -3,17 +3,20 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# 只复制 package 文件（利用 Docker 缓存层）
-COPY package.json ./
+# 安装 pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 安装依赖
-RUN npm ci --legacy-peer-deps --no-optional --prefer-offline
+# 只复制 package 文件（利用 Docker 缓存层）
+COPY package.json pnpm-lock.yaml ./
+
+# 安装依赖（使用 pnpm）
+RUN pnpm install --frozen-lockfile
 
 # 复制源代码（.dockerignore 会排除不必要的文件）
 COPY . .
 
 # 构建生产版本
-RUN npm run build
+RUN pnpm build
 
 # 生产阶段 - 使用 nginx 提供静态文件
 FROM nginx:alpine
