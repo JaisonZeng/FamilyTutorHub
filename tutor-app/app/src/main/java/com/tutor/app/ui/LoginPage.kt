@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun LoginPage(
     loginViewModel: LoginViewModel = viewModel(),
+    snackbarHostState: SnackbarHostState,
     onLoginSuccess: () -> Unit = {},
     onBackToSettings: () -> Unit = {}
 ) {
@@ -28,13 +29,26 @@ fun LoginPage(
     var passwordVisible by remember { mutableStateOf(false) }
     val loginState by loginViewModel.loginState.collectAsState()
 
+    // 监听登录状态变化，显示提示
     LaunchedEffect(loginState) {
-        if (loginState is LoginState.Success) {
-            onLoginSuccess()
+        when (loginState) {
+            is LoginState.Success -> {
+                // 立即跳转，不显示Snackbar以避免延迟
+                onLoginSuccess()
+                loginViewModel.clearLoginState()
+            }
+            is LoginState.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = (loginState as LoginState.Error).message,
+                    duration = SnackbarDuration.Long
+                )
+            }
+            else -> {}
         }
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("登录") },
@@ -99,21 +113,7 @@ fun LoginPage(
                 enabled = loginState !is LoginState.Loading
             )
 
-            when (loginState) {
-                is LoginState.Error -> {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = (loginState as LoginState.Error).message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                else -> {
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {

@@ -44,6 +44,7 @@ private const val TOTAL_PAGES = 1000
 fun MainScreen(
     viewModel: MainViewModel = viewModel(),
     authManager: com.tutor.app.data.AuthManager? = null,
+    snackbarHostState: SnackbarHostState? = null,
     onLogout: () -> Unit = {}
 ) {
     val currentDate by viewModel.currentDate.collectAsState()
@@ -51,15 +52,16 @@ fun MainScreen(
     val schedulesMap by viewModel.schedulesMap.collectAsState()
     val loadingStates by viewModel.loadingStates.collectAsState()
     val errorStates by viewModel.errorStates.collectAsState()
-    
+
     var currentScreen by remember { mutableStateOf(Screen.Schedule) }
     val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val localSnackbarHostState = remember { SnackbarHostState() }
+    val effectiveSnackbarHostState = snackbarHostState ?: localSnackbarHostState
     
     // 监听提示消息
     LaunchedEffect(Unit) {
         viewModel.snackbarMessage.collect { message ->
-            snackbarHostState.showSnackbar(
+            effectiveSnackbarHostState.showSnackbar(
                 message = message,
                 duration = SnackbarDuration.Short
             )
@@ -87,7 +89,7 @@ fun MainScreen(
     }
     
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(effectiveSnackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { 

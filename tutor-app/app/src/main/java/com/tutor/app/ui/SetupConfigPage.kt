@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 fun SetupConfigPage(
     settingsViewModel: SettingsViewModel = viewModel(),
     loginViewModel: LoginViewModel = viewModel(),
+    snackbarHostState: SnackbarHostState,
     onConfigured: () -> Unit = {}
 ) {
     var baseUrl by remember { mutableStateOf(SettingsManager.DEFAULT_BASE_URL) }
@@ -51,6 +52,7 @@ fun SetupConfigPage(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("配置服务器") },
