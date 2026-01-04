@@ -6,13 +6,17 @@ WORKDIR /app
 # 安装 pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 只复制 package 文件（利用 Docker 缓存层）
+# 复制 package 文件
 COPY package.json pnpm-lock.yaml ./
 
-# 安装依赖（使用 pnpm）
-RUN pnpm install --frozen-lockfile
+# 设置 npm 镜像源 (可选，如果服务器在国内或网络慢)
+RUN npm config set registry https://registry.npmmirror.com/
 
-# 复制源代码（.dockerignore 会排除不必要的文件）
+# 【关键修改】去掉 --frozen-lockfile
+# 允许 pnpm 在容器内根据 package.json 更新 lock 文件
+RUN pnpm install
+
+# 复制源代码
 COPY . .
 
 # 构建生产版本
