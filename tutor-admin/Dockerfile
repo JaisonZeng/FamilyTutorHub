@@ -3,13 +3,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# 复制 package 文件
+# 只复制 package 文件（利用 Docker 缓存层）
 COPY package.json ./
 
-# 安装依赖（使用 --legacy-peer-deps 解决依赖冲突）
-RUN npm install --legacy-peer-deps --no-optional
+# 安装依赖
+RUN npm ci --legacy-peer-deps --no-optional --prefer-offline
 
-# 复制源代码
+# 复制源代码（.dockerignore 会排除不必要的文件）
 COPY . .
 
 # 构建生产版本

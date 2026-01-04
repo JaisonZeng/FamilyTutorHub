@@ -15,3 +15,23 @@ mock
 README.md
 CODE_OF_CONDUCT.md
 LICENSE
+.pnpm-store
+coverage
+.npm
+.umi
+.umi-production
+.pnp
+.pnp.js
+# 测试和临时文件
+*.test.ts
+*.test.tsx
+__tests__
+# 构建缓存
+.cache
+.eslintcache
+# 其他
+*.md
+!README.md
+.editorconfig
+.prettierrc
+.templaterc

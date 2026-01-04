@@ -1,2 +1,15 @@
 tutor.db
 node_modules
+.git
+.gitignore
+.env
+*.log
+.vscode
+.idea
+.DS_Store
+*.md
+!README.md
+docs
+scripts
+*.test.go
+coverage

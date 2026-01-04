@@ -8,7 +8,8 @@ RUN apk add --no-cache git
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 COPY go.mod go.sum ./
-RUN go mod download
+# 下载依赖并更新 go.sum
+RUN go mod download && go mod tidy
 COPY . .
 
 # 生成 Swagger 文档并编译
