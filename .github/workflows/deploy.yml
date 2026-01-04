@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 检测文件变化
         id: changes
@@ -60,6 +62,8 @@ jobs:
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 设置 Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -94,6 +98,8 @@ jobs:
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 设置 Docker Buildx
         uses: docker/setup-buildx-action@v3
