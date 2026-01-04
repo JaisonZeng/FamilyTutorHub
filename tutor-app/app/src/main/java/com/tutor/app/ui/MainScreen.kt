@@ -41,7 +41,11 @@ private const val TOTAL_PAGES = 1000
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel()) {
+fun MainScreen(
+    viewModel: MainViewModel = viewModel(),
+    authManager: com.tutor.app.data.AuthManager? = null,
+    onLogout: () -> Unit = {}
+) {
     val currentDate by viewModel.currentDate.collectAsState()
     val syncLogs by viewModel.syncLogs.collectAsState()
     val schedulesMap by viewModel.schedulesMap.collectAsState()
@@ -198,7 +202,9 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 }
             }
             Screen.Settings -> SettingsContent(
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.padding(padding),
+                authManager = authManager,
+                onLogout = onLogout
             )
             Screen.Logs -> LogsContent(
                 logs = syncLogs,
@@ -229,11 +235,20 @@ private fun SchedulePage(
 @Composable
 private fun SettingsContent(
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = viewModel()
+    authManager: com.tutor.app.data.AuthManager? = null,
+    viewModel: SettingsViewModel = viewModel(),
+    onLogout: () -> Unit = {}
 ) {
     val currentUrl by viewModel.baseUrl.collectAsState()
     val saveSuccess by viewModel.saveSuccess.collectAsState()
-    
+    var username by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(authManager) {
+        authManager?.username?.collect { user ->
+            username = user
+        }
+    }
+
     var urlInput by remember(currentUrl) { mutableStateOf(currentUrl) }
     
     LaunchedEffect(saveSuccess) {
@@ -246,13 +261,13 @@ private fun SettingsContent(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
             text = "服务器设置",
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         OutlinedTextField(
             value = urlInput,
             onValueChange = { urlInput = it },
@@ -261,13 +276,13 @@ private fun SettingsContent(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
-        
+
         Text(
             text = "提示：如果家里IP变动了，在这里修改后端地址即可",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -278,7 +293,7 @@ private fun SettingsContent(
             ) {
                 Text("重置")
             }
-            
+
             Button(
                 onClick = { viewModel.saveBaseUrl(urlInput) },
                 modifier = Modifier.weight(1f)
@@ -286,21 +301,57 @@ private fun SettingsContent(
                 Text("保存")
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
+
         Divider()
-        Spacer(modifier = Modifier.height(8.dp))
-        
+
+        Text(
+            text = "账号",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "当前登录",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = username ?: "未知用户",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+
+        Button(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Text("退出登录")
+        }
+
+        Divider()
+
         Text(
             text = "关于",
             style = MaterialTheme.typography.titleMedium
         )
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("课程表 App", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("版本: 1.0.0", style = MaterialTheme.typography.bodySmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "GitHub: github.com/JaisonZeng/FamilyTutorHub",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
