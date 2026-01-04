@@ -1,18 +1,26 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"tutor-management/config"
 	_ "tutor-management/docs" // swagger docs
 	"tutor-management/handlers"
+	"tutor-management/middleware"
 	"tutor-management/models"
+	"tutor-management/utils"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 )
 
 // @title 家教管理系统 API
@@ -38,23 +46,56 @@ func init() {
 }
 
 func main() {
+	// 初始化日志系统
+	logPath := os.Getenv("LOG_PATH")
+	if logPath == "" {
+		logPath = "./logs/app.log"
+	}
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	isDev := os.Getenv("ENV") != "production"
+
+	if err := utils.InitLogger(logPath, logLevel, isDev); err != nil {
+		log.Fatal("初始化日志系统失败:", err)
+	}
+	defer utils.Sync()
+
+	utils.Info("Starting tutor management system",
+		zap.String("env", os.Getenv("ENV")),
+		zap.String("log_level", logLevel),
+	)
+
 	// 加载配置
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal("加载配置失败:", err)
+		utils.Fatal("加载配置失败", zap.Error(err))
 	}
 
 	// 初始化数据库
 	db, err := config.InitDatabase(cfg)
 	if err != nil {
-		log.Fatal("数据库连接失败:", err)
+		utils.Fatal("数据库连接失败", zap.Error(err))
 	}
+
+	utils.Info("Database connected successfully")
 
 	// 自动迁移
 	db.AutoMigrate(&models.Student{}, &models.Course{}, &models.Schedule{}, &models.ExamResult{}, &models.User{})
 
-	// 初始化 Gin
-	r := gin.Default()
+	// 设置Gin模式
+	if !isDev {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// 初始化 Gin (不使用默认中间件)
+	r := gin.New()
+
+	// 添加自定义中间件
+	r.Use(middleware.Recovery())
+	r.Use(middleware.RequestLogger())
+	r.Use(middleware.SlowRequestLogger(2 * time.Second))
 
 	// 配置 CORS
 	r.Use(cors.New(cors.Config{
@@ -71,9 +112,15 @@ func main() {
 	scheduleHandler := handlers.NewScheduleHandler(db)
 	examResultHandler := handlers.NewExamResultHandler(db)
 	trendHandler := handlers.NewTrendHandler()
+	healthHandler := handlers.NewHealthHandler(db)
 
 	// 初始化管理员账号
 	authHandler.InitAdmin()
+
+	// 健康检查路由
+	r.GET("/health", healthHandler.HealthCheck)
+	r.GET("/health/ready", healthHandler.ReadinessCheck)
+	r.GET("/metrics", healthHandler.MetricsCheck)
 
 	api := r.Group("/api")
 	{
@@ -122,6 +169,33 @@ func main() {
 	// Swagger 文档
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// 启动服务
-	r.Run(":8080")
+	// 创建HTTP服务器
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
+
+	// 启动服务器
+	go func() {
+		utils.Info("Server starting on :8080")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			utils.Fatal("Server failed to start", zap.Error(err))
+		}
+	}()
+
+	// 优雅关闭
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	utils.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		utils.Error("Server forced to shutdown", zap.Error(err))
+	}
+
+	utils.Info("Server exited")
 }
