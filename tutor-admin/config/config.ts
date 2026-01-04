@@ -154,4 +154,6 @@ export default defineConfig({
   define: {
     'process.env.CI': process.env.CI,
   },
+  // 修复 esbuild helper 冲突
+  esbuildMinifyIIFE: true,
 });
