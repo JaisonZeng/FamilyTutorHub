@@ -136,10 +136,6 @@ func main() {
 		api.POST("/login", authHandler.Login)
 		api.POST("/logout", authHandler.Logout)
 
-		// App 专用接口 - 无需认证
-		api.GET("/dashboard/today", scheduleHandler.GetDashboardToday)
-		api.GET("/dashboard/date", scheduleHandler.GetDashboardByDate)
-
 		// 成绩趋势分析图表 - 无需认证（图片资源）
 		api.GET("/analysis/:student_id/trend.png", trendHandler.GetTrendChart)
 
@@ -149,6 +145,10 @@ func main() {
 		{
 			protected.GET("/currentUser", authHandler.CurrentUser)
 			protected.PUT("/password", authHandler.ChangePassword)
+
+			// App 专用接口 - 需要认证
+			protected.GET("/dashboard/today", scheduleHandler.GetDashboardToday)
+			protected.GET("/dashboard/date", scheduleHandler.GetDashboardByDate)
 
 			protected.GET("/students", studentHandler.GetAll)
 			protected.POST("/students", studentHandler.Create)
