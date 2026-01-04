@@ -1,4 +1,4 @@
-import { LogoutOutlined } from '@ant-design/icons';
+import { LogoutOutlined, LockOutlined } from '@ant-design/icons';
 import { history, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
 import { Spin } from 'antd';
@@ -53,6 +53,8 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ children }) =
   const onMenuClick: MenuProps['onClick'] = (event) => {
     if (event.key === 'logout') {
       loginOut();
+    } else if (event.key === 'changePassword') {
+      history.push('/change-password');
     }
   };
 
@@ -73,6 +75,14 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ children }) =
   }
 
   const menuItems = [
+    {
+      key: 'changePassword',
+      icon: <LockOutlined />,
+      label: '修改密码',
+    },
+    {
+      type: 'divider' as const,
+    },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
