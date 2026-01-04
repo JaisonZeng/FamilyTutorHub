@@ -148,6 +148,7 @@ func main() {
 		protected.Use(handlers.JWTMiddleware())
 		{
 			protected.GET("/currentUser", authHandler.CurrentUser)
+			protected.PUT("/password", authHandler.ChangePassword)
 
 			protected.GET("/students", studentHandler.GetAll)
 			protected.POST("/students", studentHandler.Create)

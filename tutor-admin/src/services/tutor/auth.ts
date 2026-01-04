@@ -26,3 +26,15 @@ export async function logout() {
 export async function getCurrentUser() {
   return request<{ data: API.CurrentUser }>('/api/currentUser');
 }
+
+export interface ChangePasswordParams {
+  old_password: string;
+  new_password: string;
+}
+
+export async function changePassword(params: ChangePasswordParams) {
+  return request('/api/password', {
+    method: 'PUT',
+    data: params,
+  });
+}

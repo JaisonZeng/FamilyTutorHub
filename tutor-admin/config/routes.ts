@@ -17,6 +17,13 @@
     component: './Welcome',
   },
   {
+    path: '/change-password',
+    name: '修改密码',
+    icon: 'lock',
+    component: './ChangePassword',
+    hideInMenu: true,
+  },
+  {
     path: '/students',
     name: '学生管理',
     icon: 'user',

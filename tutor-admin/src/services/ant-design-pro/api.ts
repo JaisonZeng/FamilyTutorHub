@@ -92,3 +92,15 @@ export async function removeRule(options?: { [key: string]: any }) {
     },
   });
 }
+
+/** 修改密码 PUT /api/password */
+export async function changePassword(body: {
+  old_password: string;
+  new_password: string;
+}, options?: { [key: string]: any }) {
+  return request<Record<string, any>>('/api/password', {
+    method: 'PUT',
+    data: body,
+    ...(options || {}),
+  });
+}
