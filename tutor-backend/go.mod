@@ -13,6 +13,7 @@ require (
 	github.com/vicanso/go-charts/v2 v2.6.10
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.46.0
+	golang.org/x/time v0.11.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0

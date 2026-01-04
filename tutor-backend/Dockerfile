@@ -1,6 +1,9 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
+# 安装必要的构建工具
+RUN apk add --no-cache git
+
 # 安装 swag 工具
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
