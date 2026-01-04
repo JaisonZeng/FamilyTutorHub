@@ -16,7 +16,6 @@ import (
 	"tutor-management/models"
 	"tutor-management/utils"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -84,6 +83,10 @@ func main() {
 	// 自动迁移
 	db.AutoMigrate(&models.Student{}, &models.Course{}, &models.Schedule{}, &models.ExamResult{}, &models.User{})
 
+	// 初始化安全中间件
+	middleware.InitBlacklist()
+	middleware.InitRateLimiters()
+
 	// 设置Gin模式
 	if !isDev {
 		gin.SetMode(gin.ReleaseMode)
@@ -92,18 +95,21 @@ func main() {
 	// 初始化 Gin (不使用默认中间件)
 	r := gin.New()
 
-	// 添加自定义中间件
+	// 添加安全中间件
 	r.Use(middleware.Recovery())
+	r.Use(middleware.SecurityMiddleware())
+	r.Use(middleware.BlacklistMiddleware())
+	r.Use(middleware.RateLimitMiddleware())
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.SlowRequestLogger(2 * time.Second))
 
-	// 配置 CORS
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		AllowCredentials: true,
-	}))
+	// 配置 CORS (生产环境应该限制来源)
+	allowedOrigins := []string{"*"}
+	if os.Getenv("ENV") == "production" {
+		// 生产环境应该设置具体的域名
+		// allowedOrigins = []string{"https://your-domain.com"}
+	}
+	r.Use(middleware.CORSMiddleware(allowedOrigins))
 
 	// 初始化 handlers
 	authHandler := handlers.NewAuthHandler(db)
@@ -123,6 +129,8 @@ func main() {
 	r.GET("/metrics", healthHandler.MetricsCheck)
 
 	api := r.Group("/api")
+	// API 路由使用更严格的限流
+	api.Use(middleware.APIRateLimitMiddleware())
 	{
 		// 公开接口 - 无需认证
 		api.POST("/login", authHandler.Login)

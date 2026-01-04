@@ -9,18 +9,34 @@ services:
     volumes:
       - mysqldata:/var/lib/mysql
     ports:
-      - "3306:3306"
-    command: --default-authentication-plugin=mysql_native_password
+      - "127.0.0.1:3306:3306"
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --max_connections=100
+      --innodb_buffer_pool_size=256M
+      --innodb_log_file_size=64M
+      --table_open_cache=200
+      --tmp_table_size=16M
+      --max_heap_table_size=16M
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   backend:
     build: ./tutor-backend
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       DB_HOST: db
       DB_PORT: "3306"
@@ -29,7 +45,8 @@ services:
       DB_NAME: tutor
       ENV: production
       LOG_PATH: /app/logs/app.log
-      LOG_LEVEL: info
+      LOG_LEVEL: warn
+      GIN_MODE: release
     volumes:
       - backend-logs:/app/logs
     depends_on:
@@ -45,21 +62,37 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "5m"
+        max-file: "2"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   frontend:
     build: ./tutor-admin
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "5m"
+        max-file: "2"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
 volumes:
   mysqldata:
