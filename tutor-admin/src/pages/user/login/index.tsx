@@ -28,12 +28,12 @@ const Login: React.FC = () => {
     try {
       setError('');
       const res = await login(values);
-      
+
       // 保存 token
       localStorage.setItem('token', res.token);
-      
+
       message.success('登录成功！');
-      
+
       // 更新用户信息
       flushSync(() => {
         setInitialState((s) => ({
@@ -77,7 +77,7 @@ const Login: React.FC = () => {
               size: 'large',
               prefix: <UserOutlined />,
             }}
-            placeholder="用户名: admin"
+            placeholder="用户名"
             rules={[{ required: true, message: '请输入用户名' }]}
           />
           <ProFormText.Password
@@ -86,7 +86,7 @@ const Login: React.FC = () => {
               size: 'large',
               prefix: <LockOutlined />,
             }}
-            placeholder="密码: admin123"
+            placeholder="密码"
             rules={[{ required: true, message: '请输入密码' }]}
           />
         </LoginForm>
