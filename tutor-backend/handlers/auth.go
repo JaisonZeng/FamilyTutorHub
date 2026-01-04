@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"tutor-management/models"
+	"tutor-management/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -52,11 +54,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	var user models.User
 	if err := h.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		utils.Warn("Login failed - user not found",
+			zap.String("username", req.Username),
+			zap.String("ip", c.ClientIP()),
+		)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		utils.Warn("Login failed - invalid password",
+			zap.String("username", req.Username),
+			zap.String("ip", c.ClientIP()),
+		)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
 		return
 	}
@@ -70,9 +80,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
+		utils.Error("Failed to generate JWT token",
+			zap.String("username", user.Username),
+			zap.Error(err),
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成token失败"})
 		return
 	}
+
+	utils.Info("User logged in successfully",
+		zap.String("username", user.Username),
+		zap.Uint("user_id", user.ID),
+		zap.String("ip", c.ClientIP()),
+	)
 
 	c.JSON(http.StatusOK, LoginResponse{
 		Token:       tokenString,
@@ -136,6 +156,10 @@ func JWTMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
+			utils.Warn("Invalid JWT token",
+				zap.String("ip", c.ClientIP()),
+				zap.Error(err),
+			)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的token"})
 			c.Abort()
 			return
@@ -167,5 +191,6 @@ func (h *AuthHandler) InitAdmin() {
 			Avatar:   "https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png",
 		}
 		h.DB.Create(&admin)
+		utils.Info("Default admin account created", zap.String("username", "admin"))
 	}
 }

@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"tutor-management/models"
+	"tutor-management/utils"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -27,9 +29,11 @@ func NewStudentHandler(db *gorm.DB) *StudentHandler {
 func (h *StudentHandler) GetAll(c *gin.Context) {
 	var students []models.Student
 	if err := h.DB.Find(&students).Error; err != nil {
+		utils.Error("Failed to fetch students", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	utils.Debug("Fetched all students", zap.Int("count", len(students)))
 	c.JSON(http.StatusOK, students)
 }
 
@@ -46,13 +50,19 @@ func (h *StudentHandler) GetAll(c *gin.Context) {
 func (h *StudentHandler) Create(c *gin.Context) {
 	var student models.Student
 	if err := c.ShouldBindJSON(&student); err != nil {
+		utils.Warn("Invalid student data", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if err := h.DB.Create(&student).Error; err != nil {
+		utils.Error("Failed to create student", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	utils.Info("Student created",
+		zap.Uint("student_id", student.ID),
+		zap.String("name", student.Name),
+	)
 	c.JSON(http.StatusCreated, student)
 }
 
@@ -71,17 +81,24 @@ func (h *StudentHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 	var student models.Student
 	if err := h.DB.First(&student, id).Error; err != nil {
+		utils.Warn("Student not found for update", zap.String("id", id))
 		c.JSON(http.StatusNotFound, gin.H{"error": "学生不存在"})
 		return
 	}
 	if err := c.ShouldBindJSON(&student); err != nil {
+		utils.Warn("Invalid update data", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if err := h.DB.Save(&student).Error; err != nil {
+		utils.Error("Failed to update student", zap.String("id", id), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	utils.Info("Student updated",
+		zap.Uint("student_id", student.ID),
+		zap.String("name", student.Name),
+	)
 	c.JSON(http.StatusOK, student)
 }
 
@@ -95,8 +112,10 @@ func (h *StudentHandler) Update(c *gin.Context) {
 func (h *StudentHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.DB.Delete(&models.Student{}, id).Error; err != nil {
+		utils.Error("Failed to delete student", zap.String("id", id), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	utils.Info("Student deleted", zap.String("id", id))
 	c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
 }
