@@ -30,13 +30,19 @@ jobs:
       - name: 检测文件变化
         id: changes
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "tutor-backend"; then
+          # 获取上一次提交的 SHA，如果不存在则使用 HEAD^
+          PREV_SHA="${{ github.event.before }}"
+          if ! git rev-parse --quiet --verify "$PREV_SHA" >/dev/null; then
+            PREV_SHA="HEAD^"
+          fi
+
+          if git diff --name-only "$PREV_SHA" ${{ github.sha }} | grep -q "tutor-backend"; then
             echo "backend=true" >> $GITHUB_OUTPUT
           else
             echo "backend=false" >> $GITHUB_OUTPUT
           fi
 
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "tutor-admin"; then
+          if git diff --name-only "$PREV_SHA" ${{ github.sha }} | grep -q "tutor-admin"; then
             echo "frontend=true" >> $GITHUB_OUTPUT
           else
             echo "frontend=false" >> $GITHUB_OUTPUT
