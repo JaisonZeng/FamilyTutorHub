@@ -3,7 +3,6 @@ module tutor-management
 go 1.24.0
 
 require (
-	github.com/gin-contrib/cors v1.5.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
