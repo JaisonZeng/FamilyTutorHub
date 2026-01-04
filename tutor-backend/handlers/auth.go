@@ -76,11 +76,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 生成 JWT
+	// 生成 JWT (30天有效期，适合家庭使用)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		"exp":      time.Now().Add(30 * 24 * time.Hour).Unix(),
 	})
 
 	tokenString, err := token.SignedString(jwtSecret)
