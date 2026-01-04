@@ -8,8 +8,8 @@ on:
 
 env:
   REGISTRY: docker.io
-  BACKEND_IMAGE: jaisonzeng7/familytutorhub-backend
-  FRONTEND_IMAGE: jaisonzeng7/familytutorhub-frontend
+  BACKEND_IMAGE: familytutorhub-backend
+  FRONTEND_IMAGE: familytutorhub-frontend
 
 jobs:
   build-and-push:
